@@ -1,6 +1,8 @@
-import { PlugIcon, ExternalLinkIcon, CheckIcon, AlertTriangleIcon, LinkIcon } from "lucide-react";
+"use client";
+
+import { PlugIcon, ExternalLinkIcon, CheckIcon, AlertTriangleIcon } from "lucide-react";
 import type { DynamicToolUIPart } from "ai";
-import { Button } from "@/components/ui/button";
+import { ConnectButton } from "@/components/connect-button";
 import { TOOLKIT_CATALOG } from "@/lib/ai/tools/composio-catalog";
 import { safeHttpUrl } from "@/lib/utils";
 
@@ -9,14 +11,29 @@ const MAX_OUTPUT_CHARS = 900;
 const CONNECT_URL_KEYS = [
   "redirectUrl",
   "redirect_url",
+  "redirect_uri",
+  "redirectUri",
+  "redirect",
   "connectLink",
   "connect_link",
   "authUrl",
   "auth_url",
+  "authUri",
+  "auth_uri",
+  "authLink",
+  "auth_link",
   "connectionUrl",
   "connection_url",
+  "connectionUri",
+  "connection_uri",
   "connectUrl",
   "connect_url",
+  "loginUrl",
+  "login_url",
+  "actionUrl",
+  "action_url",
+  "url",
+  "link",
 ];
 
 const TOOLKIT_KEYS = [
@@ -29,10 +46,23 @@ const TOOLKIT_KEYS = [
   "appName",
 ];
 
-type ConnectRequest = { url: string; appName?: string };
-
 function isHttpUrl(value: string): boolean {
   return /^https?:\/\//i.test(value.trim()) && Boolean(safeHttpUrl(value.trim()));
+}
+
+function isConnectOrRedirectUrl(url: string): boolean {
+  if (!isHttpUrl(url)) return false;
+  const lower = url.toLowerCase();
+  return (
+    lower.includes("redirect") ||
+    lower.includes("connect") ||
+    lower.includes("auth") ||
+    lower.includes("oauth") ||
+    lower.includes("login") ||
+    lower.includes("authorize") ||
+    lower.includes("composio") ||
+    lower.includes("session")
+  );
 }
 
 function humanizeSlug(slug: string): string {
@@ -47,6 +77,23 @@ function resolveAppName(value: unknown): string | null {
   const slug = value.trim().toLowerCase();
   const known = TOOLKIT_CATALOG.find((t) => t.slug === slug);
   return known ? known.name : humanizeSlug(slug);
+}
+
+function getAppNameFromPart(part: DynamicToolUIPart): string | null {
+  if (part.input && typeof part.input === "object") {
+    const record = part.input as Record<string, unknown>;
+    for (const key of TOOLKIT_KEYS) {
+      const name = resolveAppName(record[key]);
+      if (name) return name;
+    }
+  }
+  const toolNameLower = part.toolName.toLowerCase();
+  for (const toolkit of TOOLKIT_CATALOG) {
+    if (toolNameLower.includes(toolkit.slug.toLowerCase())) {
+      return toolkit.name;
+    }
+  }
+  return null;
 }
 
 function extractConnectRequest(value: unknown, depth = 0): {
@@ -81,6 +128,12 @@ function extractConnectRequest(value: unknown, depth = 0): {
       if (appName) break;
     }
 
+    for (const [key, candidate] of Object.entries(record)) {
+      if (typeof candidate === "string" && isConnectOrRedirectUrl(candidate)) {
+        return { url: candidate.trim(), appName };
+      }
+    }
+
     for (const item of Object.values(record)) {
       const found = extractConnectRequest(item, depth + 1);
       if (found.url) return { url: found.url, appName: found.appName ?? appName };
@@ -91,12 +144,12 @@ function extractConnectRequest(value: unknown, depth = 0): {
 
   if (typeof value === "string") {
     const candidate = value.trim();
-    if (
-      isHttpUrl(candidate) &&
-      candidate.includes("composio") &&
-      /auth|connect/i.test(candidate)
-    ) {
+    if (isConnectOrRedirectUrl(candidate)) {
       return { url: candidate, appName: null };
+    }
+    const match = candidate.match(/https?:\/\/[^\s"'<>]+/i);
+    if (match && isConnectOrRedirectUrl(match[0])) {
+      return { url: match[0], appName: null };
     }
   }
 
@@ -136,41 +189,6 @@ function summarizeOutput(output: unknown): string {
   return text.length > MAX_OUTPUT_CHARS ? `${text.slice(0, MAX_OUTPUT_CHARS)}…` : text;
 }
 
-function ConnectCard({ request }: { request: ConnectRequest }) {
-  const safeUrl = safeHttpUrl(request.url);
-  return (
-    <div className="animate-in fade-in slide-in-from-bottom-2 flex flex-col gap-3 rounded-xl border border-primary/25 bg-card px-4 py-3.5 duration-500">
-      <div className="flex items-center gap-3">
-        <span className="relative flex size-9 shrink-0 items-center justify-center">
-          <span className="absolute inset-0 animate-ping rounded-full bg-primary/15 [animation-duration:2.2s]" />
-          <span className="relative flex size-9 items-center justify-center rounded-full bg-primary/10">
-            <PlugIcon className="size-4.5 text-primary" />
-          </span>
-        </span>
-        <div className="min-w-0">
-          <div className="font-medium text-sm">
-            Connect {request.appName ?? "your account"}
-          </div>
-          <div className="text-muted-foreground text-xs">
-            Approve access in the new tab, then tell the agent to continue.
-          </div>
-        </div>
-      </div>
-      <div>
-        <Button
-          className="group/connect"
-          render={<a href={safeUrl} rel="noreferrer" target="_blank" />}
-          size="sm"
-        >
-          <LinkIcon className="size-3.5" />
-          Connect {request.appName ?? "account"}
-          <ExternalLinkIcon className="size-3.5 transition-transform duration-200 group-hover/connect:translate-x-0.5 group-hover/connect:-translate-y-0.5" />
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 export function DynamicToolPart({ part }: { part: DynamicToolUIPart }) {
   const label = humanizeToolName(part.toolName);
 
@@ -184,13 +202,24 @@ export function DynamicToolPart({ part }: { part: DynamicToolUIPart }) {
         </div>
       );
     case "output-available": {
-      const { url, appName } = extractConnectRequest(part.output);
-      if (url) {
-        return <ConnectCard request={{ url, appName: appName ?? undefined }} />;
-      }
+      let { url, appName } = extractConnectRequest(part.output);
+      const appNameFromPart = getAppNameFromPart(part);
+      const finalAppName = appName ?? appNameFromPart ?? undefined;
 
       const urls: string[] = [];
       collectUrls(part.output, urls);
+
+      if (!url) {
+        const connectCandidate = urls.find(isConnectOrRedirectUrl);
+        if (connectCandidate) {
+          url = connectCandidate;
+        }
+      }
+
+      if (url) {
+        return <ConnectButton appName={finalAppName} href={url} />;
+      }
+
       const summary = summarizeOutput(part.output);
       return (
         <div className="flex flex-col gap-2 rounded-xl border bg-card px-3 py-2.5">
@@ -199,17 +228,32 @@ export function DynamicToolPart({ part }: { part: DynamicToolUIPart }) {
             {label}
             <CheckIcon className="size-3.5 text-green-600" />
           </div>
-          {urls.map((foundUrl) => (
-            <a
-              className="inline-flex items-center gap-1 break-all text-sm text-primary hover:underline"
-              href={safeHttpUrl(foundUrl)}
-              key={foundUrl}
-              rel="noreferrer"
-              target="_blank"
-            >
-              {foundUrl} <ExternalLinkIcon className="size-3 shrink-0" />
-            </a>
-          ))}
+          {urls.length > 0 && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {urls.map((foundUrl) => {
+                const safe = safeHttpUrl(foundUrl);
+                if (!safe) return null;
+                let displayHost = safe;
+                try {
+                  displayHost = new URL(safe).hostname.replace(/^www\./, "");
+                } catch {
+                  // ignore
+                }
+                return (
+                  <a
+                    className="inline-flex max-w-fit items-center gap-1.5 rounded-lg border border-border/70 bg-muted/40 px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted"
+                    href={safe}
+                    key={foundUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <span>{displayHost}</span>
+                    <ExternalLinkIcon className="size-3 text-muted-foreground" />
+                  </a>
+                );
+              })}
+            </div>
+          )}
           {summary && (
             <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-muted-foreground">
               {summary}

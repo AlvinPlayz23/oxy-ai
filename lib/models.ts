@@ -97,6 +97,12 @@ export const MODELS: GatewayModel[] = [
     provider: "openrouter",
     description: "MiniMax M3 — free via OpenRouter",
   },
+  {
+    id: "openrouter/inclusionai/ling-3.0-flash-fin:free",
+    name: "Ling 3.0 Flash Fin Free",
+    provider: "openrouter",
+    description: "InclusionAI Ling 3.0 Flash Fin — finance-focused MoE, 262K context — free via OpenRouter",
+  },
 ];
 
 export const DEFAULT_MODEL = MODELS[1]?.id ?? "openai/gpt-4o-mini";

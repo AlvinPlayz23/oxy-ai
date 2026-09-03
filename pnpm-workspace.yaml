@@ -1,3 +1,7 @@
+packages:
+  - "."
+  - "landing"
+
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver

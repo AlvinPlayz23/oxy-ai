@@ -182,6 +182,14 @@
   --sidebar-primary: var(--color-neutral-800);
   --sidebar-primary-foreground: var(--color-neutral-50);
   --sidebar-ring: var(--color-neutral-400);
+  --sidebar-elevated:
+    0px 0px 0px 1px rgba(0, 0, 0, 0.06),
+    0px 1px 2px -1px rgba(0, 0, 0, 0.06),
+    0px 2px 4px 0px rgba(0, 0, 0, 0.04);
+  --sidebar-elevated-hover:
+    0px 0px 0px 1px rgba(0, 0, 0, 0.08),
+    0px 1px 2px -1px rgba(0, 0, 0, 0.08),
+    0px 2px 4px 0px rgba(0, 0, 0, 0.06);
 }
 
 .dark {
@@ -226,6 +234,8 @@
   --sidebar-primary: var(--color-neutral-100);
   --sidebar-primary-foreground: var(--color-neutral-800);
   --sidebar-ring: var(--color-neutral-400);
+  --sidebar-elevated: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --sidebar-elevated-hover: 0 0 0 1px rgba(255, 255, 255, 0.13);
 }
 
 @layer base {
