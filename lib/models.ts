@@ -1,4 +1,4 @@
-export type ModelProvider = "openai" | "anthropic" | "google" | "openrouter";
+export type ModelProvider = "openrouter";
 
 export interface GatewayModel {
   id: string;
@@ -7,78 +7,9 @@ export interface GatewayModel {
   description?: string;
 }
 
-// Curated list - user can choose any of these 4 providers
+// Curated list of models available through OpenRouter.
 export const MODELS: GatewayModel[] = [
-  // OpenAI
-  {
-    id: "openai/gpt-4o",
-    name: "GPT-4o",
-    provider: "openai",
-    description: "Flagship OpenAI model, strong all-rounder",
-  },
-  {
-    id: "openai/gpt-4o-mini",
-    name: "GPT-4o mini",
-    provider: "openai",
-    description: "Fast, cheaper OpenAI model",
-  },
-  {
-    id: "openai/gpt-5",
-    name: "GPT-5",
-    provider: "openai",
-    description: "Next-gen OpenAI reasoning model",
-  },
-  {
-    id: "openai/gpt-5-mini",
-    name: "GPT-5 mini",
-    provider: "openai",
-    description: "Smaller GPT-5 for speed/cost",
-  },
-  // Anthropic
-  {
-    id: "anthropic/claude-sonnet-4",
-    name: "Claude Sonnet 4",
-    provider: "anthropic",
-    description: "Balanced Anthropic for marketing work",
-  },
-  {
-    id: "anthropic/claude-sonnet-4.5",
-    name: "Claude Sonnet 4.5",
-    provider: "anthropic",
-    description: "Latest Sonnet with improved reasoning",
-  },
-  {
-    id: "anthropic/claude-opus-4.6",
-    name: "Claude Opus 4.6",
-    provider: "anthropic",
-    description: "Most capable Anthropic model",
-  },
-  {
-    id: "anthropic/claude-haiku-4.5",
-    name: "Claude Haiku 4.5",
-    provider: "anthropic",
-    description: "Fast Anthropic for lightweight tasks",
-  },
-  // Google
-  {
-    id: "google/gemini-2.5-pro",
-    name: "Gemini 2.5 Pro",
-    provider: "google",
-    description: "Google flagship, 1M context",
-  },
-  {
-    id: "google/gemini-2.5-flash",
-    name: "Gemini 2.5 Flash",
-    provider: "google",
-    description: "Fast Google model",
-  },
-  {
-    id: "google/gemini-2.0-flash",
-    name: "Gemini 2.0 Flash",
-    provider: "google",
-    description: "Lightweight Google",
-  },
-  // OpenRouter (free tier models as requested)
+  // OpenRouter free-tier models.
   {
     id: "openrouter/z-ai/glm-5.2:free",
     name: "GLM 5.2 Free",
@@ -105,7 +36,7 @@ export const MODELS: GatewayModel[] = [
   },
 ];
 
-export const DEFAULT_MODEL = MODELS[1]?.id ?? "openai/gpt-4o-mini";
+export const DEFAULT_MODEL = "openrouter/inclusionai/ling-3.0-flash-fin:free";
 
 export function isModelAllowed(id: string) {
   return MODELS.some((m) => m.id === id);
@@ -117,12 +48,6 @@ export function getModelById(id: string) {
 
 export function getProviderFromModelId(id: string): ModelProvider | undefined {
   const prefix = id.split("/")[0];
-  if (
-    prefix === "openai" ||
-    prefix === "anthropic" ||
-    prefix === "google" ||
-    prefix === "openrouter"
-  )
-    return prefix as ModelProvider;
+  if (prefix === "openrouter") return prefix;
   return undefined;
 }

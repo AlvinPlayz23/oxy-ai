@@ -4,11 +4,7 @@ import { isProviderConfigured } from "@/lib/ai/provider";
 export async function GET() {
   // Filter to configured providers if keys present; otherwise return all for UI demo
   // (chat route will error at execution if key missing, which is intentional)
-  const hasAnyKey =
-    isProviderConfigured("openai") ||
-    isProviderConfigured("anthropic") ||
-    isProviderConfigured("google") ||
-    isProviderConfigured("openrouter");
+  const hasAnyKey = isProviderConfigured("openrouter");
 
   const models = hasAnyKey
     ? MODELS.filter((m) => isProviderConfigured(m.provider))

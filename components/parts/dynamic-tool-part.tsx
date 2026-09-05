@@ -50,6 +50,11 @@ function isHttpUrl(value: string): boolean {
   return /^https?:\/\//i.test(value.trim()) && Boolean(safeHttpUrl(value.trim()));
 }
 
+function normalizeUrl(value: string): string | null {
+  const candidate = value.trim().replace(/[),.;!?]+$/, "");
+  return isHttpUrl(candidate) ? candidate : null;
+}
+
 function isConnectOrRedirectUrl(url: string): boolean {
   if (!isHttpUrl(url)) return false;
   const lower = url.toLowerCase();
@@ -115,10 +120,11 @@ function extractConnectRequest(value: unknown, depth = 0): {
 
     for (const key of CONNECT_URL_KEYS) {
       const candidate = record[key];
-      if (typeof candidate === "string" && isHttpUrl(candidate)) {
+      const normalized = typeof candidate === "string" ? normalizeUrl(candidate) : null;
+      if (normalized) {
         const appFromSibling =
           TOOLKIT_KEYS.map((k) => resolveAppName(record[k])).find(Boolean) ?? null;
-        return { url: candidate.trim(), appName: appFromSibling };
+        return { url: normalized, appName: appFromSibling };
       }
     }
 
@@ -128,9 +134,12 @@ function extractConnectRequest(value: unknown, depth = 0): {
       if (appName) break;
     }
 
-    for (const [key, candidate] of Object.entries(record)) {
-      if (typeof candidate === "string" && isConnectOrRedirectUrl(candidate)) {
-        return { url: candidate.trim(), appName };
+    for (const candidate of Object.values(record)) {
+      if (typeof candidate === "string") {
+        const normalized = normalizeUrl(candidate);
+        if (normalized && isConnectOrRedirectUrl(normalized)) {
+          return { url: normalized, appName };
+        }
       }
     }
 
@@ -144,12 +153,24 @@ function extractConnectRequest(value: unknown, depth = 0): {
 
   if (typeof value === "string") {
     const candidate = value.trim();
-    if (isConnectOrRedirectUrl(candidate)) {
-      return { url: candidate, appName: null };
+    const normalized = normalizeUrl(candidate);
+    if (normalized && isConnectOrRedirectUrl(normalized)) {
+      return { url: normalized, appName: null };
     }
+
+    // Composio may serialize the connection response inside a text result.
+    try {
+      const parsed = JSON.parse(candidate) as unknown;
+      const found = extractConnectRequest(parsed, depth + 1);
+      if (found.url || found.appName) return found;
+    } catch {
+      // The value is plain text, so continue with URL extraction below.
+    }
+
     const match = candidate.match(/https?:\/\/[^\s"'<>]+/i);
-    if (match && isConnectOrRedirectUrl(match[0])) {
-      return { url: match[0], appName: null };
+    const matchedUrl = match ? normalizeUrl(match[0]) : null;
+    if (matchedUrl && isConnectOrRedirectUrl(matchedUrl)) {
+      return { url: matchedUrl, appName: null };
     }
   }
 
@@ -160,8 +181,17 @@ function collectUrls(value: unknown, found: string[], depth = 0): void {
   if (found.length >= 3 || depth > 6 || value == null) return;
   if (typeof value === "string") {
     const candidate = value.trim();
-    if (/^https?:\/\//i.test(candidate) && safeHttpUrl(candidate)) {
-      found.push(candidate);
+    const normalized = normalizeUrl(candidate);
+    if (normalized) {
+      found.push(normalized);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(candidate) as unknown;
+      collectUrls(parsed, found, depth + 1);
+    } catch {
+      // The value is plain text and contains no directly usable URL.
     }
     return;
   }
@@ -202,7 +232,9 @@ export function DynamicToolPart({ part }: { part: DynamicToolUIPart }) {
         </div>
       );
     case "output-available": {
-      let { url, appName } = extractConnectRequest(part.output);
+      const connectRequest = extractConnectRequest(part.output);
+      let { url } = connectRequest;
+      const { appName } = connectRequest;
       const appNameFromPart = getAppNameFromPart(part);
       const finalAppName = appName ?? appNameFromPart ?? undefined;
 

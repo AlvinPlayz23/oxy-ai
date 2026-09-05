@@ -39,10 +39,10 @@ export function PromptForm({
 
   return (
     <form onSubmit={handleSubmit}>
-      <InputGroup>
+      <InputGroup className="has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0">
         <InputGroupTextarea
           placeholder="Send a message…"
-          className="p-3.5"
+          className="p-3.5 has-focus-visible:border-transparent has-focus-visible:ring-0"
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={(event) => {
