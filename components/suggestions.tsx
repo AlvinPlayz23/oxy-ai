@@ -35,6 +35,7 @@ export function Suggestions({
           key={suggestion.label}
           variant="outline"
           size="sm"
+          className="rounded-full border-border/80 bg-card/80 text-foreground shadow-sm backdrop-blur-sm hover:border-oxy/45 hover:bg-mint-soft"
           onClick={() => onSelect(suggestion.prompt)}
         >
           {suggestion.label}

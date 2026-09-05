@@ -39,7 +39,7 @@ export function PromptForm({
 
   return (
     <form onSubmit={handleSubmit}>
-      <InputGroup className="has-[[data-slot=input-group-control]:focus-visible]:border-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-0">
+      <InputGroup className="border-border/80 bg-card/78 shadow-sm backdrop-blur-[18px] backdrop-saturate-150 has-[[data-slot=input-group-control]:focus-visible]:border-oxy/45 has-[[data-slot=input-group-control]:focus-visible]:ring-2 has-[[data-slot=input-group-control]:focus-visible]:ring-oxy/15">
         <InputGroupTextarea
           placeholder="Send a message…"
           className="p-3.5 has-focus-visible:border-transparent has-focus-visible:ring-0"
