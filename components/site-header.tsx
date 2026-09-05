@@ -9,7 +9,7 @@ export function SiteHeader() {
     <header className="flex items-center justify-between gap-2 px-6 py-3">
       <div className="flex min-w-0 items-center gap-2">
         <SidebarTrigger />
-        <Link href="/" className="text-sm font-medium">
+        <Link href="/" aria-label="Oxy AI home" className="text-sm font-medium">
           Chat
         </Link>
       </div>

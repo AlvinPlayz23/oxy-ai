@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useChat } from "@ai-sdk/react"
 import { lastAssistantMessageIsCompleteWithToolCalls } from "ai"
@@ -87,6 +88,14 @@ export function Chat({
         <div className="flex flex-1 items-center justify-center p-6">
           <Empty>
             <EmptyHeader>
+              <Image
+                src="/oxy-logo.svg"
+                alt="Oxy AI"
+                width={90}
+                height={58}
+                priority
+                className="mx-auto mb-2 h-14 w-auto"
+              />
               <EmptyTitle>What can I help with?</EmptyTitle>
               <EmptyDescription>
                 Marketing execution agent — search the web with Exa, clarify
